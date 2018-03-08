@@ -1,3 +1,4 @@
+import com.google.common.collect.Sets;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 
 import java.util.*;
@@ -74,12 +75,14 @@ public class EVM {
     public List<Integer> reduce(double[][] X, List<Weibull.WeibullParams> psi_l, double sigma) {
         // corresponds to Set Cover Model Reduction
 
+        // So the idea is that we first generate a N_l x N_l pairwise distance matrix
         double[][] distMatrix = new double[X.length][X[0].length];
         for (int i = 0; i < X.length; i++) {
             for (int j = 0; j < X[i].length; j++) {
                 distMatrix[i][j] = euclideanDistance.compute(X[i], X[j]);
             }
         }
+
 
 
         HashMap<Integer, Set<Integer>> S = new HashMap<>();
@@ -96,12 +99,28 @@ public class EVM {
         }
 
         List<Integer> indices = new ArrayList<>();
-        HashMap<Integer, Set<Integer>> C = new HashMap<>();
+        Set<Integer> C = new HashSet<>();
+
+        //
 
         // now do greedy set cover
         // consider http://www.martinbroadhurst.com/greedy-set-cover-in-python.html
-        while(!C.keySet().stream().t.containsAll(universe)) {
+        while(!C.containsAll(universe)) {
+            Set<Integer> maxS = null;
+            Integer index = -1;
+            int maxDif = -1;
+            for (Map.Entry<Integer, Set<Integer>> e : S.entrySet()) {
+                int dif = Sets.difference(e.getValue(), C).size();
+                if (dif > maxDif) {
+                    index = e.getKey();
+                    maxS = e.getValue();
+                    maxDif = dif;
+                }
+            }
 
+            C.addAll(maxS);
+            indices.add(index);
+            S.remove(index);
         }
 
 
