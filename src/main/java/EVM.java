@@ -53,8 +53,28 @@ public class EVM {
     }
 
 
-    public int predict(List<Model> model, double x[], int labels[], double threshold) {
-        return 0;
+    public int predict(List<Model> model, double x[], int label, double threshold) {
+
+        int predicted = -1;
+        double maxPsiValClass = -1;
+
+        for (Model m : model) {
+
+            double maxPsi = -1;
+            int i = 0;
+            for (Weibull.WeibullParams params : m.psi_l) {
+                double psiVal = psi(params, euclideanDistance.compute(m.xs[i], x));
+                if (psiVal > maxPsi) {
+                    maxPsi = psiVal;
+                }
+            }
+            if (maxPsi > maxPsiValClass) {
+                maxPsiValClass = maxPsi;
+                predicted = m.label;
+            }
+        }
+
+        return predicted;
     }
 
     public double psi(Weibull.WeibullParams params, double dist) {
