@@ -53,7 +53,14 @@ public class EVM {
     }
 
 
-    public int predict(List<Model> model, double x[], int label, double threshold) {
+    /**
+     * Predict the class label or return -1 for unknown
+     * @param model the trained model
+     * @param x the example to predict
+     * @param threshold the threshold for rejecting
+     * @return
+     */
+    public int predict(List<Model> model, double x[], double threshold) {
 
         int predicted = -1;
         double maxPsiValClass = -1;
@@ -73,8 +80,10 @@ public class EVM {
                 predicted = m.label;
             }
         }
-
-        return predicted;
+        if (maxPsiValClass > threshold) {
+            return predicted;
+        }
+        return -1;
     }
 
     public double psi(Weibull.WeibullParams params, double dist) {
