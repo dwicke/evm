@@ -11,25 +11,45 @@ public class EVM {
 
     class Model {
         List<Weibull.WeibullParams> psi_l;
-        List<Integer> indices;
+        int label;
+        double xs[][];
 
-        public Model(int label, List<Weibull.WeibullParams> psi_l, List<Integer> indices) {
-            this.indices = indices;
+        public Model(int label, List<Weibull.WeibullParams> psi_l, double[][] examples) {
+            this.label = label;
+            // each row of examples corresponds to
             this.psi_l = psi_l;
+            this.xs = examples;
         }
     }
 
-
-    public void train(Map<Integer, double[][]> X, int y[], int tau, double sigma, int labels[], int numSamples) {
+    /**
+     *
+     * @param X key is the class label and the value is an array of examples where each row is an example
+     * @param tau is the number of features to use
+     * @param sigma is the coverage threshold
+     * @param labels is the list of labels for the data
+     * @param numSamples the total number of examples
+     */
+    public List<Model> train(Map<Integer, double[][]> X, int tau, double sigma, int labels[], int numSamples) {
 
         List<Model> perClassModel = new ArrayList<>();
         for (int i = 0; i < labels.length; i++) {
 
-            List<Weibull.WeibullParams> psi_l = fit(X, y, tau, labels[i], numSamples);
+            List<Weibull.WeibullParams> psi_l = fit(X, tau, labels[i], numSamples);
             List<Integer> indices = reduce(X.get(labels[i]), psi_l, sigma);
 
-            perClassModel.add(new Model(labels[i], psi_l, indices ));
+            List<Weibull.WeibullParams> reduced_psi_l = new ArrayList<>();
+            double reduced_X_l[][] = new double[indices.size()][X.get(i)[0].length];
+            int count = 0;
+            for (Integer index : indices) {
+                reduced_psi_l.add(psi_l.get(index));
+                reduced_X_l[count] = X.get(i)[index];
+            }
+
+            perClassModel.add(new Model(labels[i], reduced_psi_l, reduced_X_l));
+
         }
+        return perClassModel;
     }
 
 
@@ -42,7 +62,7 @@ public class EVM {
     }
 
 
-    public List<Weibull.WeibullParams> fit(Map<Integer, double[][]> X, int y[], int tau, int label, int numSamples) {
+    public List<Weibull.WeibullParams> fit(Map<Integer, double[][]> X, int tau, int label, int numSamples) {
 
 
         // create the distance matrix
