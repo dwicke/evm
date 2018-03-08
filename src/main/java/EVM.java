@@ -30,13 +30,13 @@ public class EVM {
      * @param labels is the list of labels for the data
      * @param numSamples the total number of examples
      */
-    public List<Model> train(Map<Integer, double[][]> X, int tau, double sigma, int labels[], int numSamples) {
+    public List<Model> train(Map<Integer, double[][]> X, int tau, int labels[], int numSamples, double sigma, int maxEVs, double tolerance) {
 
         List<Model> perClassModel = new ArrayList<>();
         for (int i = 0; i < labels.length; i++) {
 
             List<Weibull.WeibullParams> psi_l = fit(X, tau, labels[i], numSamples);
-            List<Integer> indices = reduce(X.get(labels[i]), psi_l, sigma);
+            List<Integer> indices = fixedSizeReduction(X.get(labels[i]), psi_l,maxEVs, tolerance);//reduce(X.get(labels[i]), psi_l, sigma);
 
             List<Weibull.WeibullParams> reduced_psi_l = new ArrayList<>();
             double reduced_X_l[][] = new double[indices.size()][X.get(i)[0].length];
@@ -120,7 +120,13 @@ public class EVM {
     }
 
 
-
+    /**
+     * Reduce the size of the model
+     * @param X matrix corresponding to examples all within the same class (each row corresponds to a feature vector)
+     * @param psi_l the weibull parameters for each feature vector
+     * @param sigma the
+     * @return
+     */
     public List<Integer> reduce(double[][] X, List<Weibull.WeibullParams> psi_l, double sigma) {
         // corresponds to Set Cover Model Reduction
 
@@ -174,6 +180,31 @@ public class EVM {
 
 
         return indices;
+    }
+
+
+    public List<Integer> fixedSizeReduction(double[][] X, List<Weibull.WeibullParams> psi_l, int maxEVs, double tolerance) {
+        double sigma_min = 0.0;
+        double sigma_old = 1.0;
+        double sigma_max = 1.0;
+        while(true) {
+
+            double sigma = (sigma_min + sigma_max) / 2.0;
+            List<Integer> I = reduce(X, psi_l, sigma);
+            int M = I.size();
+            boolean Cfour = M == maxEVs || Math.abs(sigma - sigma_old) <= tolerance;
+            if (X.length - maxEVs >= M - maxEVs &&  M - maxEVs > 0) {
+                sigma_max = sigma;
+            } else if ((X.length - maxEVs >= M - maxEVs &&  M - maxEVs < 0) || (X.length - maxEVs < M - maxEVs)) {
+                sigma_min = sigma;
+            }
+
+            if (Cfour) {
+                return I.stream().collect(Collectors.toList()).subList(0,maxEVs);
+            }
+
+
+        }
     }
 
 
