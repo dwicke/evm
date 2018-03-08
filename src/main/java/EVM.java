@@ -36,8 +36,8 @@ public class EVM {
         return 0;
     }
 
-    public double psi(Weibull.WeibullParams params, double x[], double x_prime[]) {
-        return 3;
+    public double psi(Weibull.WeibullParams params, double dist) {
+        return Math.exp(Math.pow(- dist / params.lam, params.k));
     }
 
 
@@ -70,14 +70,42 @@ public class EVM {
     }
 
 
+
     public List<Integer> reduce(double[][] X, List<Weibull.WeibullParams> psi_l, double sigma) {
         // corresponds to Set Cover Model Reduction
 
+        double[][] distMatrix = new double[X.length][X[0].length];
+        for (int i = 0; i < X.length; i++) {
+            for (int j = 0; j < X[i].length; j++) {
+                distMatrix[i][j] = euclideanDistance.compute(X[i], X[j]);
+            }
+        }
 
 
+        HashMap<Integer, Set<Integer>> S = new HashMap<>();
+        Set<Integer> universe = new HashSet<>();
+
+        for (int i = 0; i < X.length; i++) {
+            universe.add(i);
+            for (int j = 0; j < X[i].length; j++) {
+                if (psi(psi_l.get(i), distMatrix[i][j]) >= sigma) {
+                    Set<Integer> a = S.getOrDefault(i, new HashSet<>());
+                    a.add(j);
+                }
+            }
+        }
+
+        List<Integer> indices = new ArrayList<>();
+        HashMap<Integer, Set<Integer>> C = new HashMap<>();
+
+        // now do greedy set cover
+        // consider http://www.martinbroadhurst.com/greedy-set-cover-in-python.html
+        while(!C.keySet().stream().t.containsAll(universe)) {
+
+        }
 
 
-        return null;
+        return indices;
     }
 
 
