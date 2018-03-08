@@ -3,7 +3,7 @@ Extreme Value Machine in Java
 
 A Java 9 implementation of the Extreme Value Machine (EVM), an open world classification algorithm.
 
-The main paper is here: https://www.wjscheirer.com/papers/wjs_tpami2017_evm.pdf
+The main paper is here: https://www.wjscheirer.com/papers/wjs_tpami2017_evm.pdf (http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7932895)
 
 The suplemental material and algorithm psuedo code is here: https://www.wjscheirer.com/papers/wjs_tpami2017_evm_supp.pdf
 
