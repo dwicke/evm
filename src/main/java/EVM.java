@@ -1,12 +1,14 @@
 import com.google.common.collect.Sets;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class EVM {
 
     final EuclideanDistance euclideanDistance = new EuclideanDistance();
+
+    boolean COSINE = true;
+
     final Weibull weibull = new Weibull();
 
     class Model {
@@ -20,6 +22,12 @@ public class EVM {
             this.psi_l = psi_l;
             this.xs = examples;
         }
+    }
+
+
+
+    public EVM(boolean useCosine) {
+        COSINE = useCosine;
     }
 
     /**
@@ -207,5 +215,25 @@ public class EVM {
         }
     }
 
+    public double getDistance(double[] a, double[] b) {
+        if (COSINE) {
+            return cosineSimilarity(a, b);
+        }else {
+            return euclideanDistance.compute(a, b);
+        }
+    }
+
+
+    public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+        for (int i = 0; i < vectorA.length; i++) {
+            dotProduct += vectorA[i] * vectorB[i];
+            normA += Math.pow(vectorA[i], 2);
+            normB += Math.pow(vectorB[i], 2);
+        }
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
 
 }
