@@ -13,7 +13,7 @@ public class EVM {
 
     final Weibull weibull = new Weibull();
 
-    class Model {
+    public class Model {
         List<Weibull.WeibullParams> psi_l;
         int label;
         double xs[][];
