@@ -155,7 +155,7 @@ public class EVM {
 
         for (int i = 0; i < X.length; i++) {
             universe.add(i);
-            for (int j = 0; j < X[i].length; j++) {
+            for (int j = 0; j < X.length; j++) {
                 if (psi(psi_l.get(i), distMatrix[i][j]) >= sigma) {
                     Set<Integer> a = S.getOrDefault(i, new HashSet<>());
                     a.add(j);
