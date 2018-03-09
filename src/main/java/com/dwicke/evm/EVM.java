@@ -1,24 +1,21 @@
 package com.dwicke.evm;
 
-import com.google.common.collect.Sets;
-import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class EVM {
 
-    final EuclideanDistance euclideanDistance = new EuclideanDistance();
 
     boolean COSINE = true;
 
-    final Weibull weibull = new Weibull();
 
     public class Model {
-        List<Weibull.WeibullParams> psi_l;
+        List<WeibullParams> psi_l;
         int label;
         double xs[][];
 
-        public Model(int label, List<Weibull.WeibullParams> psi_l, double[][] examples) {
+        public Model(int label, List<WeibullParams> psi_l, double[][] examples) {
             this.label = label;
             // each row of examples corresponds to
             this.psi_l = psi_l;
@@ -45,10 +42,10 @@ public class EVM {
         List<Model> perClassModel = new ArrayList<>();
         for (int i = 0; i < labels.length; i++) {
 
-            List<Weibull.WeibullParams> psi_l = fit(X, tau, labels[i], numSamples);
+            List<WeibullParams> psi_l = fit(X, tau, labels[i], numSamples);
             List<Integer> indices = fixedSizeReduction(X.get(labels[i]), psi_l,maxEVs, tolerance);//reduce(X.get(labels[i]), psi_l, sigma);
 
-            List<Weibull.WeibullParams> reduced_psi_l = new ArrayList<>();
+            List<WeibullParams> reduced_psi_l = new ArrayList<>();
             double reduced_X_l[][] = new double[indices.size()][X.get(i)[0].length];
             int count = 0;
             for (Integer index : indices) {
@@ -79,7 +76,7 @@ public class EVM {
 
             double maxPsi = -1;
             int i = 0;
-            for (Weibull.WeibullParams params : m.psi_l) {
+            for (WeibullParams params : m.psi_l) {
                 double psiVal = psi(params, getDistance(m.xs[i], x));
                 if (psiVal > maxPsi) {
                     maxPsi = psiVal;
@@ -96,12 +93,12 @@ public class EVM {
         return -1;
     }
 
-    public double psi(Weibull.WeibullParams params, double dist) {
+    public double psi(WeibullParams params, double dist) {
         return Math.exp(Math.pow(- dist / params.lam, params.k));
     }
 
 
-    public List<Weibull.WeibullParams> fit(Map<Integer, double[][]> X, int tau, int label, int numSamples) {
+    public List<WeibullParams> fit(Map<Integer, double[][]> X, int tau, int label, int numSamples) {
 
 
         // create the distance matrix
@@ -119,11 +116,11 @@ public class EVM {
             }
         }
 
-        List<Weibull.WeibullParams> evs = new ArrayList<>();
+        List<WeibullParams> evs = new ArrayList<>();
         // now create the EV's
         for (int i = 0; i < distMatrix.length; i++) {
             // com.dwicke.evm.Weibull fit low( 1/2 × sort(Di)[: τ ])
-            evs.add(weibull.fit(Arrays.stream(distMatrix[i]).sorted().boxed().collect(Collectors.toList()).subList(0,tau).stream().map(val -> .5 * val).collect(Collectors.toList())));
+            evs.add(fit(Arrays.stream(distMatrix[i]).sorted().boxed().collect(Collectors.toList()).subList(0,tau).stream().map(val -> .5 * val).collect(Collectors.toList())));
         }
 
         return evs;
@@ -137,7 +134,7 @@ public class EVM {
      * @param sigma the
      * @return
      */
-    public List<Integer> reduce(double[][] X, List<Weibull.WeibullParams> psi_l, double sigma) {
+    public List<Integer> reduce(double[][] X, List<WeibullParams> psi_l, double sigma) {
         // corresponds to Set Cover Model Reduction
 
         // So the idea is that we first generate a N_l x N_l pairwise distance matrix
@@ -164,6 +161,7 @@ public class EVM {
             }
         }
 
+
         List<Integer> indices = new ArrayList<>();
         Set<Integer> C = new HashSet<>();
 
@@ -172,11 +170,11 @@ public class EVM {
         // now do greedy set cover
         // consider http://www.martinbroadhurst.com/greedy-set-cover-in-python.html
         while(!C.containsAll(universe)) {
-            Set<Integer> maxS = null;
+            Set<Integer> maxS = new HashSet<>();
             Integer index = -1;
             int maxDif = -1;
             for (Map.Entry<Integer, Set<Integer>> e : S.entrySet()) {
-                int dif = Sets.difference(e.getValue(), C).size();
+                int dif = difference(e.getValue(), C).size();
                 if (dif > maxDif) {
                     index = e.getKey();
                     maxS = e.getValue();
@@ -194,7 +192,26 @@ public class EVM {
     }
 
 
-    public List<Integer> fixedSizeReduction(double[][] X, List<Weibull.WeibullParams> psi_l, int maxEVs, double tolerance) {
+    public Set<Integer> difference(Set<Integer> a, Set<Integer> b) {
+
+        Set<Integer> diff = new HashSet<>();
+
+        for (Integer i : a) {
+            diff.add(i);
+        }
+
+        // a - b
+        for (Integer i : a) {
+            if (b.contains(i)) {
+                diff.remove(i);
+            }
+        }
+
+        return diff;
+    }
+
+
+    public List<Integer> fixedSizeReduction(double[][] X, List<WeibullParams> psi_l, int maxEVs, double tolerance) {
         double sigma_min = 0.0;
         double sigma_old = 1.0;
         double sigma_max = 1.0;
@@ -222,10 +239,18 @@ public class EVM {
         if (COSINE) {
             return cosineSimilarity(a, b);
         }else {
-            return euclideanDistance.compute(a, b);
+            return euclideanDist(a, b);
         }
     }
 
+
+    public static double euclideanDist(double[] vectorA, double[] vectorB) {
+        double dotProduct = 0.0;
+        for (int i = 0; i < vectorA.length; i++) {
+            dotProduct += vectorA[i] * vectorB[i];
+        }
+        return Math.sqrt(dotProduct);
+    }
 
     public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
         double dotProduct = 0.0;
@@ -237,6 +262,53 @@ public class EVM {
             normB += Math.pow(vectorB[i], 2);
         }
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+
+    public class WeibullParams {
+        public double k = 1.0;
+        public double lam;
+    }
+
+    double eps = .000006;
+    int iters = 100;
+
+    /**
+     * Fits a 2-parameter com.dwicke.evm.Weibull distribution to the given data using maximum-likelihood estimation.
+     * each value in x must be > 0
+     * based off python version here:
+     * https://github.com/mlosch/python-weibullfit/blob/master/weibull/backend_numpy.py
+     * @param x > 0 for all values
+     * @return weibull parameters populated in a WeibullParams object
+     */
+    public WeibullParams fit(List<Double> x) {
+        List<Double> ln_x = x.stream().map(val -> Math.log(val)).collect(Collectors.toList());
+        double mean_ln_x = ln_x.stream().mapToDouble(Double::doubleValue).sum() / (double) ln_x.size();
+        WeibullParams params = new WeibullParams();
+        double kPlusOne = params.k;
+
+        for (int i = 0; i < iters; i++) {
+            List<Double> x_k = x.stream().map(val -> Math.pow(val, params.k)).collect(Collectors.toList());
+            List<Double> x_k_ln_x = IntStream.range(0, Math.min(x_k.size(), ln_x.size())).mapToDouble(p -> x_k.get(p) * ln_x.get(p)).boxed().collect(Collectors.toList());
+            double ff = x_k_ln_x.stream().mapToDouble(Double::doubleValue).sum();
+            double fg = x_k.stream().mapToDouble(Double::doubleValue).sum();
+            double f = ff / fg - mean_ln_x - (1.0 / params.k);
+
+            // Calculate second derivative d^2f/dk^2
+            double ff_prime = IntStream.range(0, Math.min(x_k_ln_x.size(), ln_x.size())).mapToDouble(p -> x_k_ln_x.get(p) * ln_x.get(p)).sum();
+            double fg_prime = ff;
+            double f_prime = (ff_prime / fg - (ff/fg * fg_prime/fg)) + (1.0 / (params.k * params.k));
+
+            // Newton-Raphson method k = k - f(k;x)/f'(k;x)
+            params.k -= f / f_prime;
+
+            if (Math.abs(params.k - kPlusOne) < eps) {
+                break;
+            }
+            kPlusOne = params.k;
+        }
+        double x_k_avg = x.stream().mapToDouble(val -> Math.pow(val,params.k)).sum() / (double) x.size();
+        params.lam = Math.pow(x_k_avg, (1.0 / params.k));
+        return params;
     }
 
 }
