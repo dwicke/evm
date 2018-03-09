@@ -3,7 +3,7 @@ Extreme Value Machine in Java
 
 [![Release](https://jitpack.io/v/dwicke/evm.svg)](https://jitpack.io/#dwicke/evm)
 
-A Java 9 implementation of the Extreme Value Machine (EVM), an open world classification algorithm.
+A Java 9 implementation of the Extreme Value Machine (com.dwicke.evm.EVM), an open world classification algorithm.
 
 The main paper is here: https://www.wjscheirer.com/papers/wjs_tpami2017_evm.pdf (http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7932895)
 

@@ -1,3 +1,5 @@
+package com.dwicke.evm;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,7 +16,7 @@ public class Weibull {
     int iters = 100;
 
     /**
-     * Fits a 2-parameter Weibull distribution to the given data using maximum-likelihood estimation.
+     * Fits a 2-parameter com.dwicke.evm.Weibull distribution to the given data using maximum-likelihood estimation.
      * each value in x must be > 0
      * based off python version here:
      * https://github.com/mlosch/python-weibullfit/blob/master/weibull/backend_numpy.py

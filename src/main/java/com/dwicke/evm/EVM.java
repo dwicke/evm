@@ -1,3 +1,5 @@
+package com.dwicke.evm;
+
 import com.google.common.collect.Sets;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import java.util.*;
@@ -120,7 +122,7 @@ public class EVM {
         List<Weibull.WeibullParams> evs = new ArrayList<>();
         // now create the EV's
         for (int i = 0; i < distMatrix.length; i++) {
-            // Weibull fit low( 1/2 × sort(Di)[: τ ])
+            // com.dwicke.evm.Weibull fit low( 1/2 × sort(Di)[: τ ])
             evs.add(weibull.fit(Arrays.stream(distMatrix[i]).sorted().boxed().collect(Collectors.toList()).subList(0,tau).stream().map(val -> .5 * val).collect(Collectors.toList())));
         }
 
