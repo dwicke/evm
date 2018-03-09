@@ -141,9 +141,9 @@ public class EVM {
         // corresponds to Set Cover Model Reduction
 
         // So the idea is that we first generate a N_l x N_l pairwise distance matrix
-        double[][] distMatrix = new double[X.length][X[0].length];
+        double[][] distMatrix = new double[X.length][X.length];
         for (int i = 0; i < X.length; i++) {
-            for (int j = 0; j < X[i].length; j++) {
+            for (int j = 0; j < X.length; j++) {
                 distMatrix[i][j] = getDistance(X[i], X[j]);
             }
         }
