@@ -80,7 +80,7 @@ public class EVM {
             double maxPsi = -1;
             int i = 0;
             for (Weibull.WeibullParams params : m.psi_l) {
-                double psiVal = psi(params, euclideanDistance.compute(m.xs[i], x));
+                double psiVal = psi(params, getDistance(m.xs[i], x));
                 if (psiVal > maxPsi) {
                     maxPsi = psiVal;
                 }
@@ -113,7 +113,7 @@ public class EVM {
                 if (someClass.getKey() != label) {
                     double[][] outclass = someClass.getValue();
                     for (int j = 0; j < outclass.length; j++) {
-                        distMatrix[i][j] = euclideanDistance.compute(inclass[i], outclass[j]);
+                        distMatrix[i][j] = getDistance(inclass[i], outclass[j]);
                     }
                 }
             }
@@ -144,7 +144,7 @@ public class EVM {
         double[][] distMatrix = new double[X.length][X[0].length];
         for (int i = 0; i < X.length; i++) {
             for (int j = 0; j < X[i].length; j++) {
-                distMatrix[i][j] = euclideanDistance.compute(X[i], X[j]);
+                distMatrix[i][j] = getDistance(X[i], X[j]);
             }
         }
 
@@ -159,6 +159,7 @@ public class EVM {
                 if (psi(psi_l.get(i), distMatrix[i][j]) >= sigma) {
                     Set<Integer> a = S.getOrDefault(i, new HashSet<>());
                     a.add(j);
+                    S.putIfAbsent(i, a);
                 }
             }
         }
