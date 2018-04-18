@@ -7,8 +7,9 @@ import java.util.stream.IntStream;
 public class EVM {
 
 
-    boolean COSINE = true;
-
+    boolean COSINE = false;
+    boolean EUCLID = false;
+    boolean L1 = false;
 
     public class Model {
         List<WeibullParams> psi_l;
@@ -94,6 +95,9 @@ public class EVM {
     }
 
     public double psi(WeibullParams params, double dist) {
+
+        //System.err.println("e^ = ((" + (- dist / params.lam) + ") ^"+params.k + ") = " + Math.exp(Math.pow(- dist / params.lam, params.k)));
+//        System.err.println("lam = " + params.lam + " k = " + params.k + " dist = " + dist);
         return Math.exp(Math.pow(- dist / params.lam, params.k));
     }
 
@@ -105,13 +109,23 @@ public class EVM {
         // this could probably be greatly improved
         double[][] distMatrix = new double[X.get(label).length][numSamples - X.get(label).length];
         double[][] inclass = X.get(label);
+
+//        System.err.println("label = " + label);
+//        System.err.println("Dist " + X.get(label).length + ", " + (numSamples - X.get(label).length));
+//        System.err.println("inClass " + inclass.length);
+
         for (int i = 0; i < inclass.length; i++) { // for each
+            int start = 0;
             for (Map.Entry<Integer, double[][]> someClass : X.entrySet()) {
                 if (someClass.getKey() != label) {
+                    //System.err.println(" some class label = " + someClass.getKey());
                     double[][] outclass = someClass.getValue();
                     for (int j = 0; j < outclass.length; j++) {
-                        distMatrix[i][j] = getDistance(inclass[i], outclass[j]);
+                        distMatrix[i][start] = getDistance(inclass[i], outclass[j]);
+//                        System.err.println("Dist = " + distMatrix[i][start]);
+                        start++;
                     }
+
                 }
             }
         }
@@ -120,7 +134,17 @@ public class EVM {
         // now create the EV's
         for (int i = 0; i < distMatrix.length; i++) {
             // com.dwicke.evm.Weibull fit low( 1/2 × sort(Di)[: τ ])
-            evs.add(fit(Arrays.stream(distMatrix[i]).sorted().boxed().collect(Collectors.toList()).subList(0,tau).stream().map(val -> .5 * val).collect(Collectors.toList())));
+            // first sort then remove the zeros
+            // then
+
+            List<Double> a = Arrays.stream(distMatrix[i]).sorted().dropWhile(n -> n == 0).boxed().collect(Collectors.toList()).subList(0,tau).stream().map(val -> .5 * val).collect(Collectors.toList());
+            System.err.println(i + " Sorted = " + a.size() + ": ");
+            for (double ab : a) {
+                System.err.print(ab + ", ");
+            }
+            System.err.println("end sorted");
+
+            evs.add(fit(Arrays.stream(distMatrix[i]).sorted().dropWhile(n -> n == 0).boxed().collect(Collectors.toList()).subList(0,tau).stream().map(val -> .5 * val).collect(Collectors.toList())));
         }
 
         return evs;
@@ -142,6 +166,7 @@ public class EVM {
         for (int i = 0; i < X.length; i++) {
             for (int j = 0; j < X.length; j++) {
                 distMatrix[i][j] = getDistance(X[i], X[j]);
+                //System.err.println("i = " + X[i].toString() +  " j = " + X[j].toString() + "dist matrix = " + distMatrix[i][j]);
             }
         }
 
@@ -157,6 +182,11 @@ public class EVM {
                     Set<Integer> a = S.getOrDefault(i, new HashSet<>());
                     a.add(j);
                     S.putIfAbsent(i, a);
+//                    System.err.println("Adding " + j);
+                } else {
+//                    System.err.println("Not adding " + j);
+//                    System.err.println("psi = " + psi(psi_l.get(i), distMatrix[i][j]));
+
                 }
             }
         }
@@ -165,12 +195,10 @@ public class EVM {
         List<Integer> indices = new ArrayList<>();
         Set<Integer> C = new HashSet<>();
 
-        //
 
         // now do greedy set cover
-        // consider http://www.martinbroadhurst.com/greedy-set-cover-in-python.html
         while(!C.containsAll(universe)) {
-            Set<Integer> maxS = new HashSet<>();
+            Set<Integer> maxS = null;
             Integer index = -1;
             int maxDif = -1;
             for (Map.Entry<Integer, Set<Integer>> e : S.entrySet()) {
@@ -238,11 +266,40 @@ public class EVM {
     public double getDistance(double[] a, double[] b) {
         if (COSINE) {
             return cosineSimilarity(a, b);
-        }else {
+        }else if (EUCLID){
             return euclideanDist(a, b);
+        } else if (L1){
+            return LoneDist(a, b);
+        } else {
+            return jacardDist(a, b);
         }
     }
 
+    public static double jacardDist(double[] vectorA, double[] vectorB) {
+
+        double num = 0;
+        double den = 0;
+
+        for (int i = 0; i < vectorA.length; i++) {
+
+            if (vectorA[i] > 0 || vectorB[i] > 0) {
+                den++;
+                if (vectorA[i] > 0 && vectorB[i] > 0) {
+                    num++;
+                }
+            }
+
+        }
+        return 1.0 - num / den;
+    }
+
+    public static double LoneDist(double[] vectorA, double[] vectorB) {
+        double dotProduct = 0.0;
+        for (int i = 0; i < vectorA.length; i++) {
+            dotProduct += Math.abs(vectorA[i] - vectorB[i]);
+        }
+        return dotProduct;
+    }
 
     public static double euclideanDist(double[] vectorA, double[] vectorB) {
         double dotProduct = 0.0;
@@ -261,6 +318,7 @@ public class EVM {
             normA += Math.pow(vectorA[i], 2);
             normB += Math.pow(vectorB[i], 2);
         }
+
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
@@ -281,6 +339,14 @@ public class EVM {
      * @return weibull parameters populated in a WeibullParams object
      */
     public WeibullParams fit(List<Double> x) {
+
+//        System.err.println("fitting");
+//        for (Double d : x) {
+//
+//                System.err.println(d);
+//
+//        }
+
         List<Double> ln_x = x.stream().map(val -> Math.log(val)).collect(Collectors.toList());
         double mean_ln_x = ln_x.stream().mapToDouble(Double::doubleValue).sum() / (double) ln_x.size();
         WeibullParams params = new WeibullParams();
@@ -312,3 +378,4 @@ public class EVM {
     }
 
 }
+
